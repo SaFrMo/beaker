@@ -38,6 +38,7 @@ var bookmarkMenuNavbarBtn = null
 var datsiteMenuNavbarBtn = null
 var pageMenuNavbarBtn = null
 var lastKeyDown = null
+var enteredValue = ''
 
 var isLocationHighlighted = false
 
@@ -499,9 +500,11 @@ async function handleAutocompleteSearch (results) {
     )
   })
 
+  const lastKeycodeDown = lastKeyDown.keyCode
+
   // if we didn't find an autocomplete result that fit the requirements, reset suggestion and selection
   // also run reset when backspace or delete are pressed
-  if (lastKeyDown === KEYCODE_BACKSPACE || lastKeyDown === KEYCODE_DELETE || foundIndex === -1) {
+  if (lastKeycodeDown === KEYCODE_BACKSPACE || lastKeycodeDown === KEYCODE_DELETE || foundIndex === -1) {
     autocompleteSuggestion = ''
     autocompleteCurrentSelection = 0
   } else {
@@ -710,7 +713,7 @@ function onBlurLocation (e) {
 }
 
 function onInputLocation (e) {
-  var value = e.target.value
+  var value = e.target.value = enteredValue
 
   // run autocomplete
   // TODO debounce
@@ -736,8 +739,23 @@ function onInputLocation (e) {
   isLocationHighlighted = true
 }
 
+function isCharacterKeyPress (evt) {
+  if (typeof evt.which == 'number' && evt.which > 0) {
+    // In other browsers except old versions of WebKit, evt.which is
+    // only greater than zero if the keypress is a printable key.
+    // We need to filter out backspace and ctrl/alt/meta key combinations
+    return !evt.ctrlKey && !evt.metaKey && !evt.altKey && evt.which != 8 && evt.key.length === 1
+  }
+  return false
+}
+
 function onKeydownLocation (e) {
-  lastKeyDown = e.keyCode
+  lastKeyDown = e
+  if (isCharacterKeyPress(e)) {
+    e.preventDefault()
+    enteredValue += e.key
+    onInputLocation(e)
+  }
 
   // on enter
   if (e.keyCode == KEYCODE_ENTER) {
